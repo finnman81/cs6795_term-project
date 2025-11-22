@@ -30,32 +30,51 @@ SURVEY_HEADERS = [
 
 
 def init_survey_log_file(path: Path) -> None:
-    """Initialize survey log file with correct headers if it doesn't exist."""
+    """Initialize survey log file with correct headers if it doesn't exist or has wrong headers."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     
+    # Check if file exists and has correct headers
     if path.exists():
-        return  # File already exists
-    
-    # Create file with survey headers
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=SURVEY_HEADERS)
-        writer.writeheader()
+        try:
+            with open(path, "r", newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                existing_headers = reader.fieldnames
+                # Check if headers match survey headers
+                if existing_headers == SURVEY_HEADERS:
+                    return  # File exists with correct headers
+                else:
+                    # File exists but has wrong headers - backup and recreate
+                    backup_path = path.with_suffix('.csv.backup')
+                    import shutil
+                    shutil.copy2(path, backup_path)
+                    # Recreate with correct headers
+                    with open(path, "w", newline="", encoding="utf-8") as f:
+                        writer = csv.DictWriter(f, fieldnames=SURVEY_HEADERS)
+                        writer.writeheader()
+        except Exception:
+            # If we can't read it, recreate it
+            with open(path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=SURVEY_HEADERS)
+                writer.writeheader()
+    else:
+        # Create file with survey headers
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=SURVEY_HEADERS)
+            writer.writeheader()
 
 
 def save_survey_response(data):
     """Append survey responses to CSV."""
+    # Always initialize to ensure correct headers
     init_survey_log_file(SURVEY_LOG_PATH)
     
-    # Ensure all headers are present in data
-    file_exists = Path(SURVEY_LOG_PATH).exists()
+    # Ensure all headers are present in data (fill missing with empty strings)
+    complete_data = {header: data.get(header, "") for header in SURVEY_HEADERS}
     
     with open(SURVEY_LOG_PATH, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=SURVEY_HEADERS)
-        # Write header if file is new
-        if not file_exists or Path(SURVEY_LOG_PATH).stat().st_size == 0:
-            writer.writeheader()
-        writer.writerow(data)
+        writer.writerow(complete_data)
 
 
 def main():
