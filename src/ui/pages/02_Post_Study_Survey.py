@@ -12,29 +12,48 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src import config
-from src.logging_utils import init_log_file
 
 SURVEY_LOG_PATH = config.PROJECT_ROOT / "experiments" / "post_study_survey.csv"
+
+# Survey CSV headers matching the actual survey questions
+SURVEY_HEADERS = [
+    "timestamp",
+    "participant_name",
+    "less_mentally_demanding",
+    "preferred_layout",
+    "preference_reason",
+    "easier_to_understand",
+    "easier_to_find_main_points",
+    "more_overwhelming",
+    "additional_feedback"
+]
+
+
+def init_survey_log_file(path: Path) -> None:
+    """Initialize survey log file with correct headers if it doesn't exist."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    
+    if path.exists():
+        return  # File already exists
+    
+    # Create file with survey headers
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=SURVEY_HEADERS)
+        writer.writeheader()
 
 
 def save_survey_response(data):
     """Append survey responses to CSV."""
-    init_log_file(SURVEY_LOG_PATH)
+    init_survey_log_file(SURVEY_LOG_PATH)
+    
+    # Ensure all headers are present in data
     file_exists = Path(SURVEY_LOG_PATH).exists()
-    headers = [
-        "timestamp",
-        "participant_name",
-        "less_mentally_demanding",
-        "preferred_layout",
-        "preference_reason",
-        "easier_to_understand",
-        "easier_to_find_main_points",
-        "more_overwhelming",
-        "additional_feedback"
-    ]
+    
     with open(SURVEY_LOG_PATH, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
-        if f.tell() == 0:
+        writer = csv.DictWriter(f, fieldnames=SURVEY_HEADERS)
+        # Write header if file is new
+        if not file_exists or Path(SURVEY_LOG_PATH).stat().st_size == 0:
             writer.writeheader()
         writer.writerow(data)
 
