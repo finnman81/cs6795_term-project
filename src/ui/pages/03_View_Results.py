@@ -74,14 +74,20 @@ def main():
     if survey_df is not None and not survey_df.empty:
         st.write(f"**Total survey responses:** {len(survey_df)}")
         
-        # Display summary stats
+        # Display summary stats (with safe column access)
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Survey Respondents", survey_df['participant_name'].nunique())
+            if 'participant_name' in survey_df.columns:
+                st.metric("Survey Respondents", survey_df['participant_name'].nunique())
+            else:
+                st.metric("Survey Respondents", len(survey_df))
         with col2:
-            preferred_standard = len(survey_df[survey_df['preferred_layout'] == 'Standard Layout'])
-            preferred_structured = len(survey_df[survey_df['preferred_layout'] == 'Structured Layout'])
-            st.metric("Preferred Structured", f"{preferred_structured}/{len(survey_df)}")
+            if 'preferred_layout' in survey_df.columns:
+                preferred_standard = len(survey_df[survey_df['preferred_layout'] == 'Standard Layout'])
+                preferred_structured = len(survey_df[survey_df['preferred_layout'] == 'Structured Layout'])
+                st.metric("Preferred Structured", f"{preferred_structured}/{len(survey_df)}")
+            else:
+                st.metric("Total Responses", len(survey_df))
         
         # Display data
         st.subheader("Survey Data Preview")
@@ -96,7 +102,7 @@ def main():
             mime="text/csv"
         )
         
-        # Quick analysis
+        # Quick analysis (with safe column access)
         st.subheader("Quick Analysis")
         if 'less_mentally_demanding' in survey_df.columns:
             st.write("**Which layout felt less mentally demanding?**")
@@ -105,6 +111,10 @@ def main():
         if 'preferred_layout' in survey_df.columns:
             st.write("**Which layout would participants prefer to use again?**")
             st.bar_chart(survey_df['preferred_layout'].value_counts())
+        
+        if 'easier_to_understand' in survey_df.columns:
+            st.write("**Which layout made it easier to understand the information?**")
+            st.bar_chart(survey_df['easier_to_understand'].value_counts())
     else:
         st.info("No survey responses yet. Survey data will appear here as participants complete the post-study survey.")
 

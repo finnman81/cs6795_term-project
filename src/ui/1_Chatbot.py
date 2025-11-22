@@ -74,7 +74,7 @@ st.markdown(
 
     **Instructions**
     
-    You’ll use this tool to answer a few brief tasks (for example, finding strategies to reduce distractions), then tell us how clear and usable the answers felt. We’re comparing different layouts to learn which one makes it easier to understand and apply the advice.
+    You'll use this tool to answer a few brief tasks (for example, finding strategies to reduce distractions). **Please try each query with both response types** (Standard Layout and Structured Layout) using the dropdown in the sidebar, then tell us how clear and usable the answers felt. We're comparing different layouts to learn which one makes it easier to understand and apply the advice.
     """
 )
 
