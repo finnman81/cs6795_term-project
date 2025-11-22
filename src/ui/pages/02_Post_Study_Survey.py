@@ -1,0 +1,98 @@
+"""Streamlit page for post-study survey responses."""
+
+import streamlit as st
+from pathlib import Path
+import sys
+import csv
+from datetime import datetime
+
+# Ensure project root on sys.path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # Go up from pages/ -> ui/ -> src/ -> project_root
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src import config
+from src.logging_utils import init_log_file
+
+SURVEY_LOG_PATH = config.PROJECT_ROOT / "experiments" / "post_study_survey.csv"
+
+
+def save_survey_response(data):
+    """Append survey responses to CSV."""
+    init_log_file(SURVEY_LOG_PATH)
+    file_exists = Path(SURVEY_LOG_PATH).exists()
+    headers = [
+        "timestamp",
+        "participant_name",
+        "less_mentally_demanding",
+        "preferred_layout",
+        "preference_reason",
+        "easier_to_understand",
+        "easier_to_find_main_points",
+        "more_overwhelming",
+        "additional_feedback"
+    ]
+    with open(SURVEY_LOG_PATH, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        if f.tell() == 0:
+            writer.writeheader()
+        writer.writerow(data)
+
+
+def main():
+    st.title("Post-Study Survey")
+    st.write("Please answer the following questions about your experience with the chatbot layouts.")
+
+    with st.form("post_study_survey"):
+        participant_name = st.text_input("First Name")
+        less_mentally_demanding = st.radio(
+            "Which layout felt less mentally demanding overall?",
+            ["Standard Layout", "Structured Layout", "About the same"]
+        )
+        preferred_layout = st.radio(
+            "Which layout would you prefer to use again?",
+            ["Standard Layout", "Structured Layout", "No preference"]
+        )
+        preference_reason = st.text_area(
+            "In a few words, why did you prefer that layout?",
+            help="Optional but helpful for our research."
+        )
+        easier_to_understand = st.radio(
+            "Which layout made it easier to understand the information?",
+            ["Standard Layout", "Structured Layout", "About the same"]
+        )
+        easier_to_find_main_points = st.radio(
+            "Which layout made it easier to find the main points or strategies?",
+            ["Standard Layout", "Structured Layout", "About the same"]
+        )
+        more_overwhelming = st.radio(
+            "Which layout felt more overwhelming or cluttered?",
+            ["Standard Layout", "Structured Layout", "About the same"]
+        )
+        additional_feedback = st.text_area(
+            "Is there anything else you’d like to share about your experience using either layout?"
+        )
+
+        submitted = st.form_submit_button("Submit")
+        if submitted:
+            if not participant_name.strip():
+                st.warning("Please enter your first name before submitting.")
+            else:
+                response = {
+                    "timestamp": datetime.now().isoformat(),
+                    "participant_name": participant_name.strip(),
+                    "less_mentally_demanding": less_mentally_demanding,
+                    "preferred_layout": preferred_layout,
+                    "preference_reason": preference_reason.strip(),
+                    "easier_to_understand": easier_to_understand,
+                    "easier_to_find_main_points": easier_to_find_main_points,
+                    "more_overwhelming": more_overwhelming,
+                    "additional_feedback": additional_feedback.strip()
+                }
+                save_survey_response(response)
+                st.success("Thank you! Your responses have been recorded.")
+
+
+if __name__ == "__main__":
+    main()
+

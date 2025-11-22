@@ -1,0 +1,322 @@
+PROJECT: Cognitive-Load-Aware RAG for Digital Wellbeing & Focus
+
+ASSUMPTIONS
+- Domain: Practical digital wellbeing & focus (distraction, phone use, multitasking, notifications, routines)
+- Language: Python 3.x
+- UI: Streamlit (local web app)
+- LLM: OpenAI API (or equivalent)
+- Vector store: Local FAISS or ChromaDB
+- Runtime: Local machine only
+- No unnecessary documentation files (no README/docs beyond what’s needed in code and report)
+
+========================================
+DIRECTORY STRUCTURE
+========================================
+
+project_root/
+  data/
+    raw_docs/               # Original text files for digital wellbeing & focus corpus
+    processed_docs.jsonl    # Preprocessed + chunked corpus with metadata
+  src/
+    __init__.py
+    config.py               # Configuration (model names, paths, etc.)
+    ingestion.py            # Load + clean + chunk digital wellbeing documents
+    embeddings.py           # Build and query embeddings + vector store
+    rag_pipeline.py         # Core RAG pipeline (retrieve + generate)
+    prompts.py              # Prompt templates for baseline and CL-aware conditions
+    logging_utils.py        # Logging interactions and experiment data
+    ui/
+      __init__.py
+      app_streamlit.py      # Streamlit app entrypoint
+      layout_baseline.py    # Baseline (higher-load) interface layout and rendering
+      layout_cl_aware.py    # Cognitive-load-aware interface layout and rendering
+  experiments/
+    tasks.json              # Evaluation tasks and ground-truth expectations
+    results_raw.csv         # Raw logged results from participant sessions
+    results_aggregated.csv  # Cleaned and analyzed data (optional export)
+  tests/
+    test_ingestion.py       # Tests for document loading and chunking
+    test_embeddings.py      # Tests for embedding and retrieval
+    test_rag_pipeline.py    # Tests for the RAG pipeline integration
+  scripts/
+    build_index.py          # Script to build vector index from data/raw_docs
+    run_app.sh              # Convenience script to launch Streamlit app
+  .env                      # Local environment variables (API keys etc., ignored by git)
+
+========================================
+MODULE OVERVIEW
+========================================
+
+[config.py]
+- Purpose:
+  - Central place for configuration and hyperparameters.
+- Contents:
+  - MODEL_NAME, EMBEDDING_MODEL_NAME
+  - VECTOR_STORE_PATH
+  - PROCESSED_DOCS_PATH
+  - MAX_CHUNK_TOKENS, CHUNK_OVERLAP
+  - TOP_K_RETRIEVAL
+  - LOG_FILE_PATH (e.g., experiments/results_raw.csv)
+  - OPENAI_API_KEY loading from environment
+
+[ingestion.py]
+- Purpose:
+  - Convert digital wellbeing & focus content into clean, chunked passages.
+- Functionality:
+  - load_raw_documents(raw_dir) -> List[RawDocument]
+    - Reads .txt files from data/raw_docs/
+  - clean_text(text) -> str
+    - Normalize whitespace, remove weird artifacts
+  - chunk_documents(raw_docs, max_tokens, overlap) -> List[Chunk]
+    - Split docs into overlapping chunks (e.g., 500-800 tokens)
+    - Attach metadata: doc_id, title, chunk_index
+  - save_chunks(chunks, output_path)
+    - Writes chunks to data/processed_docs.jsonl
+
+[embeddings.py]
+- Purpose:
+  - Generate embeddings and manage the vector store.
+- Functionality:
+  - load_chunks(processed_path) -> List[Chunk]
+  - embed_chunks(chunks, config) -> np.ndarray or List[Vector]
+  - build_vector_store(chunks, embeddings, config) -> None
+    - Build FAISS/Chroma index and persist to VECTOR_STORE_PATH
+  - load_vector_store(config) -> VectorStore
+  - retrieve(query, vector_store, config) -> List[RetrievedChunk]
+    - Encode query
+    - Perform similarity search
+    - Return top_k chunks with scores and metadata
+
+[rag_pipeline.py]
+- Purpose:
+  - End-to-end query handling: retrieval + prompt construction + LLM call.
+- Functionality:
+  - format_context(retrieved_chunks) -> str
+    - Concatenate relevant chunks into a single context string
+  - build_prompt(query, context, condition, config) -> str
+    - Use prompts.get_baseline_prompt or prompts.get_cl_aware_prompt based on condition
+  - call_llm(prompt, config) -> str
+    - Calls OpenAI (or chosen LLM) and returns response text
+  - answer_query(query, condition, vector_store, config) -> dict
+    - Steps:
+      1. Retrieve context
+      2. Format context
+      3. Build prompt for given condition
+      4. Call LLM
+      5. Return dict with:
+         - "answer"
+         - "retrieved_chunks"
+         - "condition"
+         - "query"
+
+[prompts.py]
+- Purpose:
+  - Central definitions of prompt templates for both conditions.
+- Functionality:
+  - get_baseline_prompt(query, context) -> str
+    - Instruct LLM to answer using context, but not enforce structure strongly
+  - get_cl_aware_prompt(query, context) -> str
+    - Instruct LLM to:
+      - Provide 3–5 key strategies as bullets
+      - Briefly explain why they work (attention/working memory)
+      - Provide 1–2 simple “start today” steps
+      - Keep language simple and not overwhelming
+
+[logging_utils.py]
+- Purpose:
+  - Write structured logs of user interactions and experiment data.
+- Functionality:
+  - init_log_file(path)
+    - Create CSV with header if not existing
+  - log_interaction(
+        participant_id,
+        condition,
+        task_id,
+        query,
+        answer,
+        retrieved_chunks,
+        start_time,
+        end_time,
+        extra_meta=None
+    )
+    - Appends a row to results_raw.csv
+  - log_error(error_info)
+    - Optional: write errors to stderr or separate log
+
+[ui/app_streamlit.py]
+- Purpose:
+  - Main Streamlit app entry point.
+- Responsibilities:
+  - Initialize config and load vector store once (using st.session_state or caching).
+  - Provide UI controls:
+    - Participant ID input (for experiment sessions)
+    - Task selector (or free-form query mode)
+    - Condition selector (Baseline vs CL-aware) or random assignment
+    - “Start Task” / “Submit Answer” buttons to capture timing
+  - Use layout_baseline or layout_cl_aware to render output.
+  - Call logging_utils.log_interaction after each answer.
+
+[ui/layout_baseline.py]
+- Purpose:
+  - Define the baseline interface rendering (higher extraneous load).
+- Characteristics:
+  - Single text box for query.
+  - Answer shown as one long paragraph.
+  - Retrieved evidence (if shown) listed in a dense block below.
+- Functionality:
+  - render_baseline_view(query, answer, retrieved_chunks)
+    - Render the baseline layout in Streamlit.
+
+[ui/layout_cl_aware.py]
+- Purpose:
+  - Define the cognitive-load-aware interface rendering.
+- Characteristics:
+  - Structured answer:
+    - “Key Strategies” (bullets)
+    - “Why This Helps Your Focus” (short explanations)
+    - “Try This Today” (1–3 simple steps)
+  - More whitespace and clear headings; less clutter.
+- Functionality:
+  - render_cl_aware_view(query, answer, retrieved_chunks)
+    - Uses headings, bullet lists, and possibly collapsible sections.
+
+[experiments/tasks.json]
+- Purpose:
+  - Store evaluation tasks for consistent experiment sessions.
+- Example structure:
+  [
+    {
+      "task_id": 1,
+      "prompt": "You check your phone constantly while working. Find at least two strategies from the assistant to reduce phone checking and one concrete rule you can apply today.",
+      "ground_truth": {
+        "expected_elements": [
+          "notifications management",
+          "scheduled phone check breaks",
+          "environment changes (e.g., phone in another room)",
+          "a concrete 'rule' like 'check only every 30 minutes'"
+        ]
+      }
+    },
+    {
+      "task_id": 2,
+      "prompt": "You doomscroll at night instead of sleeping. Find one evening routine and one phone setting change that can help you avoid this.",
+      "ground_truth": {
+        "expected_elements": [
+          "evening routine element (reading, journaling, etc.)",
+          "screen-time or app-limit setting",
+          "charging phone outside bedroom or using DND"
+        ]
+      }
+    },
+    ...
+  ]
+
+[scripts/build_index.py]
+- Purpose:
+  - One-off script to create processed_docs.jsonl and vector index.
+- Pseudocode:
+  - from src import ingestion, embeddings, config
+  - raw_docs = ingestion.load_raw_documents("data/raw_docs")
+  - chunks = ingestion.chunk_documents(raw_docs, config.MAX_CHUNK_TOKENS, config.CHUNK_OVERLAP)
+  - ingestion.save_chunks(chunks, config.PROCESSED_DOCS_PATH)
+  - chunks = embeddings.load_chunks(config.PROCESSED_DOCS_PATH)
+  - embeddings_array = embeddings.embed_chunks(chunks, config)
+  - embeddings.build_vector_store(chunks, embeddings_array, config)
+
+[scripts/run_app.sh]
+- Purpose:
+  - Convenience script to run the Streamlit app.
+- Content:
+  - Export necessary env vars (e.g., OPENAI_API_KEY)
+  - Run: streamlit run src/ui/app_streamlit.py
+
+========================================
+TESTING PLAN
+========================================
+
+UNIT TESTS (tests/ directory)
+--------------------------------
+
+[test_ingestion.py]
+- Test loading of sample digital wellbeing text files.
+- Test cleaning:
+  - No weird line breaks or control characters remain.
+- Test chunking:
+  - Chunk sizes are within MAX_CHUNK_TOKENS limits.
+  - Overlaps are applied correctly.
+  - Metadata (doc_id, chunk_index) is correct.
+
+[test_embeddings.py]
+- Test embedding generation:
+  - Embedding size matches expected dimension for chosen model.
+  - No errors for basic strings.
+- Test retrieval on toy corpus:
+  - Create 3–4 small chunks with obvious content.
+  - Query for “notifications” returns the chunk mentioning notifications.
+  - Query for “sleep” returns the chunk mentioning bedtime/blue light, etc.
+
+[test_rag_pipeline.py]
+- Use a stub LLM or mock to avoid API calls in tests.
+- Test:
+  - format_context() concatenates chunks in correct order.
+  - build_prompt() uses correct template per condition.
+  - answer_query() returns non-empty answer and includes retrieved_chunks list.
+- Optionally:
+  - Replace call_llm with a fake function that returns a known string for deterministic tests.
+
+MANUAL/INTEGRATION TESTS
+--------------------------------
+
+1) Index building
+   - Run: python scripts/build_index.py
+   - Verify:
+     - data/processed_docs.jsonl is created with expected number of chunks.
+     - Vector store files exist at VECTOR_STORE_PATH.
+
+2) App startup
+   - Run: streamlit run src/ui/app_streamlit.py (or scripts/run_app.sh)
+   - Confirm:
+     - App loads in browser.
+     - You can enter a question and get an answer.
+
+3) Baseline UI behavior
+   - Condition: baseline.
+   - Ask:
+     - "How can I reduce phone use while working?"
+     - "What can I do to avoid multitasking on my laptop and phone?"
+   - Check:
+     - Answers appear as long paragraphs.
+     - Optional evidence blobs appear, possibly overwhelming.
+     - Interactions logged correctly to experiments/results_raw.csv.
+
+4) CL-aware UI behavior
+   - Condition: cl_aware.
+   - Ask the same questions.
+   - Check:
+     - Answers are structured with bullets/headings.
+     - “Try this today” section appears.
+     - Logs correctly record condition = "cl_aware".
+
+5) Experiment dry-run
+   - Simulate one full participant:
+     - Use tasks from tasks.json.
+     - Record start/end times manually or via the app.
+     - Fill subjective ratings (even if just you).
+   - Check that all necessary data fields are captured in results_raw.csv for later scoring.
+
+========================================
+RUNNING THE SYSTEM LOCALLY
+========================================
+
+1) Create and activate a Python environment.
+2) Install dependencies:
+   - pip install streamlit openai faiss-cpu (or chromadb) python-dotenv etc.
+3) Set environment variables (or .env):
+   - OPENAI_API_KEY
+4) Build vector index:
+   - python scripts/build_index.py
+5) Launch the app:
+   - streamlit run src/ui/app_streamlit.py
+6) Use the app for:
+   - Pilot testing
+   - Participant evaluation sessions

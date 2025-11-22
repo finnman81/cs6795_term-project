@@ -1,0 +1,38 @@
+[
+  {
+    "task_id": 1,
+    "prompt": "You check your phone constantly while working. Find at least two strategies from the assistant to reduce phone checking and one concrete rule you can apply today.",
+    "ground_truth": {
+      "expected_elements": [
+        "notifications management",
+        "scheduled phone check breaks",
+        "environment changes (e.g., phone in another room)",
+        "a concrete 'rule' like 'check only every 30 minutes'"
+      ]
+    }
+  },
+  {
+    "task_id": 2,
+    "prompt": "You doomscroll at night instead of sleeping. Find one evening routine and one phone setting change that can help you avoid this.",
+    "ground_truth": {
+      "expected_elements": [
+        "evening routine element (reading, journaling, etc.)",
+        "screen-time or app-limit setting",
+        "charging phone outside bedroom or using DND"
+      ]
+    }
+  },
+  {
+    "task_id": 3,
+    "prompt": "You multitask between your laptop and phone, switching constantly between work and social media. What are three specific techniques to improve focus and reduce this switching behavior?",
+    "ground_truth": {
+      "expected_elements": [
+        "time blocking or pomodoro technique",
+        "physical separation of devices",
+        "app blocking or website restrictions",
+        "single-tasking practice"
+      ]
+    }
+  }
+]
+

@@ -1,0 +1,56 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Data files (keep vector store for deployment, but ignore raw PDFs)
+# data/processed_docs.jsonl  # Needed for deployment
+# data/*.faiss  # Needed for deployment
+# data/*.faiss.index  # Needed for deployment
+# data/*.faiss.metadata.json  # Needed for deployment
+data/*.pdf  # Ignore PDFs (too large for git)
+data/raw_docs/*.txt
+
+# Experiment results (keep tasks.json, ignore result CSVs)
+experiments/results_raw.csv
+experiments/results_aggregated.csv
+experiments/post_study_survey.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit (allow config.toml, ignore secrets)
+.streamlit/secrets.toml
+.streamlit/credentials.json
+
