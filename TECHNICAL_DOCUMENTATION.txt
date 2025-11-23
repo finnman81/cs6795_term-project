@@ -1,0 +1,911 @@
+================================================================================
+COGNITIVE-LOAD-AWARE RAG SYSTEM FOR DIGITAL WELLBEING & FOCUS
+Technical Documentation
+================================================================================
+
+PROJECT OVERVIEW
+================================================================================
+
+This project implements a Retrieval-Augmented Generation (RAG) system designed to
+study how different presentation styles affect cognitive load when users interact
+with AI-generated advice about digital wellbeing and focus. The system compares
+two conditions:
+
+1. BASELINE (Standard Layout): Traditional paragraph-based responses with dense
+   information presentation
+2. CL-AWARE (Structured Layout): Structured, scannable responses with clear
+   sections, bullet points, and reduced information density
+
+The system is deployed as a Streamlit web application that allows participants
+to ask questions, receive AI-generated answers, and provide feedback through a
+post-study survey.
+
+================================================================================
+SYSTEM ARCHITECTURE
+================================================================================
+
+HIGH-LEVEL ARCHITECTURE
+-----------------------
+
+The system follows a modular RAG pipeline architecture:
+
+    [PDF Documents] 
+         |
+         v
+    [Ingestion Module] --> [Chunking] --> [Embedding Generation]
+         |                                          |
+         v                                          v
+    [Processed Chunks]                    [Vector Store (FAISS)]
+         |                                          |
+         +------------------------------------------+
+         |
+         v
+    [RAG Pipeline]
+         |
+         +--> [Retrieval] --> [Prompt Construction] --> [LLM Generation]
+         |                                                      |
+         |                                                      v
+         |                                              [Response Rendering]
+         |                                                      |
+         |                                                      v
+         |                                              [User Interface]
+         |                                                      |
+         +------------------------------------------------------+
+         |
+         v
+    [Logging System] --> [CSV Files]
+
+KEY COMPONENTS
+--------------
+
+1. Document Processing Pipeline
+   - PDF extraction and text cleaning
+   - Token-based chunking with overlap
+   - Embedding generation using OpenAI
+
+2. Vector Search System
+   - FAISS index for efficient similarity search
+   - Metadata mapping for chunk retrieval
+   - Top-k retrieval with similarity scoring
+
+3. RAG Pipeline
+   - Query embedding
+   - Context retrieval
+   - Prompt construction (condition-specific)
+   - LLM response generation
+
+4. User Interface
+   - Multi-page Streamlit application
+   - Condition-specific layout rendering
+   - Survey collection system
+   - Results viewing/downloading
+
+5. Data Collection
+   - Interaction logging (queries, responses, timing)
+   - Survey response collection
+   - CSV-based data storage
+
+================================================================================
+DIRECTORY STRUCTURE
+================================================================================
+
+project_root/
+├── data/                          # Document corpus and vector store
+│   ├── *.pdf                      # Source PDF documents (29 files)
+│   ├── processed_docs.jsonl       # Chunked documents with metadata
+│   ├── vector_store.faiss         # FAISS vector index (6.5MB)
+│   └── vector_store.faiss.metadata.json  # Chunk metadata mapping
+│
+├── src/                           # Source code
+│   ├── __init__.py               # Package initialization
+│   ├── config.py                 # Configuration management
+│   ├── ingestion.py              # Document loading and chunking
+│   ├── embeddings.py             # Embedding generation and vector store
+│   ├── rag_pipeline.py          # Core RAG pipeline logic
+│   ├── prompts.py                # Prompt templates for both conditions
+│   ├── logging_utils.py          # CSV logging utilities
+│   │
+│   └── ui/                       # Streamlit user interface
+│       ├── __init__.py
+│       ├── 1_Chatbot.py          # Main chatbot page
+│       ├── layout_baseline.py    # Baseline layout rendering
+│       ├── layout_cl_aware.py    # CL-aware layout rendering
+│       │
+│       └── pages/                # Additional Streamlit pages
+│           ├── 02_Post_Study_Survey.py  # Survey collection
+│           └── 03_View_Results.py       # Admin results viewer
+│
+├── experiments/                   # Experiment data and configuration
+│   ├── tasks.json                # Predefined evaluation tasks
+│   ├── results_raw.csv           # Chatbot interaction logs
+│   └── post_study_survey.csv     # Survey response logs
+│
+├── tests/                         # Unit and integration tests
+│   ├── test_ingestion.py
+│   ├── test_embeddings.py
+│   ├── test_rag_pipeline.py
+│   └── test_full_pipeline.py
+│
+├── scripts/                       # Utility scripts
+│   ├── build_index.py            # Vector index building script
+│   ├── test_rag.py              # Manual RAG testing script
+│   ├── run_app.bat              # Windows app launcher
+│   └── run_app.sh               # Unix app launcher
+│
+├── .streamlit/                    # Streamlit configuration
+│   └── config.toml               # Theme and server settings
+│
+├── requirements.txt               # Python dependencies
+├── .gitignore                     # Git ignore rules
+├── DEPLOYMENT.md                  # Deployment instructions
+├── PRE_DEPLOYMENT_CHECKLIST.md    # Pre-deployment checklist
+└── TECHNICAL_DOCUMENTATION.txt    # This file
+
+================================================================================
+MODULE-BY-MODULE BREAKDOWN
+================================================================================
+
+1. CONFIG.PY - Configuration Management
+---------------------------------------
+
+Purpose: Centralized configuration for the entire system.
+
+Key Components:
+- PROJECT_ROOT: Path to project root directory
+- Model Configuration:
+  * MODEL_NAME: "gpt-4-turbo-preview" (OpenAI model for generation)
+  * EMBEDDING_MODEL_NAME: "text-embedding-3-small" (OpenAI embedding model)
+- Path Configuration:
+  * DATA_DIR: Location of documents and vector store
+  * PROCESSED_DOCS_PATH: Chunked documents JSONL file
+  * VECTOR_STORE_PATH: FAISS index file location
+  * LOG_FILE_PATH: Chatbot interaction logs
+- Chunking Parameters:
+  * MAX_CHUNK_TOKENS: 600 tokens per chunk
+  * CHUNK_OVERLAP: 100 tokens overlap between chunks
+- Retrieval Parameters:
+  * TOP_K_RETRIEVAL: 5 chunks retrieved per query
+- API Configuration:
+  * OPENAI_API_KEY: Loaded from environment or Streamlit secrets
+    (Supports both local .env files and Streamlit Cloud secrets)
+
+Design Decisions:
+- Uses python-dotenv for local development
+- Falls back to Streamlit secrets for cloud deployment
+- All paths are relative to PROJECT_ROOT for portability
+
+
+2. INGESTION.PY - Document Processing
+--------------------------------------
+
+Purpose: Load, clean, and chunk documents for the RAG system.
+
+Classes:
+- RawDocument: Represents a document loaded from file
+  * doc_id: Unique identifier (filename stem)
+  * title: Human-readable title
+  * text: Full document text
+
+- Chunk: Represents a text chunk with metadata
+  * doc_id: Source document ID
+  * title: Source document title
+  * chunk_index: Sequential chunk number within document
+  * text: Chunk text content
+  * start_char, end_char: Character positions in original text
+  * to_dict()/from_dict(): JSON serialization methods
+
+Functions:
+- load_raw_documents(raw_dir: Path) -> List[RawDocument]
+  * Loads both .txt and .pdf files from directory
+  * Uses pypdf for PDF text extraction
+  * Handles errors gracefully (continues on file errors)
+  * Returns sorted list of documents
+
+- clean_text(text: str) -> str
+  * Normalizes whitespace (multiple spaces -> single space)
+  * Removes control characters (except newlines/tabs)
+  * Reduces excessive newlines (3+ -> 2)
+  * Strips leading/trailing whitespace
+
+- chunk_documents(raw_docs, max_tokens, overlap) -> List[Chunk]
+  * Uses tiktoken (cl100k_base encoding) for tokenization
+  * Splits documents into overlapping chunks
+  * Handles documents smaller than max_tokens (single chunk)
+  * Maintains character position tracking for reference
+  * Prevents infinite loops in edge cases
+
+- save_chunks(chunks, output_path) -> None
+  * Saves chunks to JSONL format (one JSON object per line)
+  * Creates parent directories if needed
+  * Uses UTF-8 encoding with ensure_ascii=False
+
+Design Decisions:
+- Token-based chunking ensures consistent chunk sizes for LLM context
+- Overlapping chunks preserve context at boundaries
+- JSONL format allows streaming/line-by-line processing
+- PDF support via pypdf (handles most standard PDFs)
+
+
+3. EMBEDDINGS.PY - Vector Store Management
+------------------------------------------
+
+Purpose: Generate embeddings and manage the FAISS vector store.
+
+Classes:
+- RetrievedChunk: Represents a retrieved chunk with similarity score
+  * chunk: Chunk object
+  * score: Similarity score (1.0 / (1.0 + L2_distance))
+
+Functions:
+- load_chunks(processed_path: Path) -> List[Chunk]
+  * Reads JSONL file line by line
+  * Deserializes Chunk objects from JSON
+  * Returns list of all chunks
+
+- embed_chunks(chunks, config) -> np.ndarray
+  * Generates embeddings using OpenAI API
+  * Processes in batches of 100 to avoid rate limits
+  * Returns numpy array of shape (n_chunks, 1536)
+  * Uses text-embedding-3-small model (1536 dimensions)
+
+- build_vector_store(chunks, embeddings, config) -> None
+  * Creates FAISS IndexFlatL2 (L2 distance metric)
+  * Adds embeddings to index
+  * Saves index to disk
+  * Saves chunk metadata as separate JSON file
+    (Maps index position -> chunk data for retrieval)
+
+- load_vector_store(config) -> Tuple[faiss.Index, List[dict]]
+  * Loads FAISS index from disk
+  * Loads metadata JSON file
+  * Returns tuple of (index, metadata_list)
+  * Raises FileNotFoundError if files don't exist
+
+- retrieve(query, vector_store, config, top_k=None) -> List[RetrievedChunk]
+  * Embeds query using OpenAI API
+  * Searches FAISS index for top-k similar chunks
+  * Converts L2 distances to similarity scores
+  * Returns sorted list (highest similarity first)
+  * Creates Chunk objects from metadata
+
+Design Decisions:
+- FAISS IndexFlatL2: Simple, exact search (no approximation)
+- Separate metadata file: Allows updating index without regenerating metadata
+- Batch embedding: Reduces API calls and handles rate limits
+- L2 distance to similarity: Simple conversion (1/(1+distance))
+- Top-k retrieval: Configurable, defaults to 5 chunks
+
+
+4. RAG_PIPELINE.PY - Core RAG Logic
+-----------------------------------
+
+Purpose: End-to-end RAG pipeline from query to answer.
+
+Functions:
+- format_context(retrieved_chunks: List[RetrievedChunk]) -> str
+  * Formats retrieved chunks into single context string
+  * Adds document titles and numbering
+  * Concatenates chunk texts with separators
+  * Returns formatted string for prompt
+
+- build_prompt(query, context, condition, config) -> str
+  * Selects appropriate prompt template based on condition
+  * "baseline" -> get_baseline_prompt()
+  * "cl_aware" -> get_cl_aware_prompt()
+  * Raises ValueError for unknown conditions
+
+- call_llm(prompt, config) -> str
+  * Calls OpenAI Chat Completions API
+  * Uses MODEL_NAME from config (gpt-4-turbo-preview)
+  * Temperature: 0.7 (balanced creativity/consistency)
+  * Max tokens: 1000 (limits response length)
+  * Returns stripped response text
+  * Handles API errors with descriptive messages
+
+- answer_query(query, condition, vector_store, config) -> Dict
+  * Complete RAG pipeline execution:
+    1. Retrieve context chunks using embeddings.retrieve()
+    2. Format context into string
+    3. Build prompt for given condition
+    4. Call LLM to generate answer
+  * Returns dictionary with:
+    * "answer": LLM response text
+    * "retrieved_chunks": List of RetrievedChunk objects
+    * "condition": Condition used ("baseline" or "cl_aware")
+    * "query": Original query string
+
+Design Decisions:
+- Modular functions: Each step is separate and testable
+- Condition-based routing: Easy to add new conditions
+- Error handling: Descriptive errors at each step
+- Return structure: Consistent dictionary format
+
+
+5. PROMPTS.PY - Prompt Templates
+---------------------------------
+
+Purpose: Define prompt templates for baseline and CL-aware conditions.
+
+Functions:
+- get_baseline_prompt(query, context) -> str
+  * Simple, direct prompt
+  * Asks for "comprehensive answer"
+  * No structure requirements
+  * Higher cognitive load (dense paragraphs expected)
+
+- get_cl_aware_prompt(query, context) -> str
+  * Structured prompt with explicit format requirements
+  * Requests three sections:
+    * "Key Strategies" (3-5 bullet points)
+    * "Why This Helps Your Focus" (2-3 sentences)
+    * "Try This Today" (1-2 actionable steps)
+  * Explicitly asks for simple, clear language
+  * Reduces cognitive load through structure
+
+Design Decisions:
+- Separate functions: Easy to modify independently
+- Explicit structure in CL-aware: Guides LLM to produce scannable output
+- No structure in baseline: Allows natural, dense responses
+- Context injection: Both use same context format
+
+
+6. LOGGING_UTILS.PY - Data Collection
+-------------------------------------
+
+Purpose: Log experiment data to CSV files.
+
+Functions:
+- init_log_file(path: Path) -> None
+  * Creates CSV file with headers if it doesn't exist
+  * Headers for chatbot interactions:
+    * timestamp, participant_id, condition, task_id, query, answer,
+    * retrieved_chunks_count, retrieved_chunks_titles, start_time,
+    * end_time, duration_seconds, extra_meta
+  * Creates parent directories if needed
+  * Idempotent (safe to call multiple times)
+
+- log_interaction(...) -> None
+  * Logs chatbot interaction to CSV
+  * Calculates duration from start/end times
+  * Extracts chunk titles from RetrievedChunk objects
+  * Formats timestamps as ISO strings
+  * Appends row to existing file
+  * Handles optional task_id and extra_meta
+
+- log_error(error_info: str) -> None
+  * Logs errors to stderr
+  * Includes timestamp
+  * Simple error tracking
+
+Design Decisions:
+- CSV format: Easy to analyze in Excel/Python
+- Append mode: Preserves existing data
+- ISO timestamps: Standardized, sortable format
+- Separate files: Chatbot logs vs survey responses
+
+
+7. UI MODULES - Streamlit Interface
+------------------------------------
+
+7.1. 1_CHATBOT.PY - Main Chatbot Page
+-------------------------------------
+
+Purpose: Main entry point for the Streamlit application.
+
+Key Features:
+- Vector store loading (cached with @st.cache_resource)
+- Task loading from experiments/tasks.json
+- Sidebar configuration:
+  * First Name input (for participant identification)
+  * Response Type selector (Standard/Structured Layout)
+  * Predefined task checkbox and selector
+- Main content area:
+  * Free-form query text area
+  * Sample question suggestions
+  * Submit button
+- Response rendering:
+  * Condition-based routing to layout modules
+  * Displays answer and retrieved chunks
+- Interaction logging:
+  * Records start/end times
+  * Logs to results_raw.csv
+  * Shows success/error messages
+
+Session State Management:
+- vector_store: Loaded once, cached
+- tasks: Loaded from JSON file
+
+Error Handling:
+- Vector store loading errors
+- API errors
+- Logging errors (non-fatal)
+
+Design Decisions:
+- Cached vector store: Avoids reloading on every interaction
+- Condition mapping: "Standard Layout" -> "baseline", "Structured Layout" -> "cl_aware"
+- Timing capture: Measures user interaction duration
+- Non-blocking errors: App continues even if logging fails
+
+
+7.2. LAYOUT_BASELINE.PY - Baseline Layout
+------------------------------------------
+
+Purpose: Render baseline (higher cognitive load) interface.
+
+Functions:
+- render_baseline_view(query, answer, retrieved_chunks) -> None
+  * Displays answer as single paragraph (st.write)
+  * Shows retrieved evidence in expandable section
+  * Dense presentation:
+    * Full chunk texts displayed
+    * All chunks visible in one section
+    * Minimal formatting
+  * Higher cognitive load characteristics
+
+Design Decisions:
+- Dense paragraphs: No structure, harder to scan
+- Expandable evidence: Reduces initial clutter but still dense when opened
+- Full text display: All context visible (potentially overwhelming)
+
+
+7.3. LAYOUT_CL_AWARE.PY - CL-Aware Layout
+------------------------------------------
+
+Purpose: Render cognitive-load-aware (lower cognitive load) interface.
+
+Functions:
+- render_cl_aware_view(query, answer, retrieved_chunks) -> None
+  * Displays answer with markdown rendering (st.markdown)
+  * Structured presentation:
+    * Headings and sections are preserved
+    * Bullet points render correctly
+    * Clear visual hierarchy
+  * Evidence presentation:
+    * Collapsible section with icon
+    * Truncated chunk previews (200 chars)
+    * Percentage relevance scores
+    * Better spacing and formatting
+
+Design Decisions:
+- Markdown rendering: Preserves LLM structure
+- Truncated previews: Reduces information density
+- Visual hierarchy: Clear sections and spacing
+- Relevance scores: Helps users understand source quality
+
+
+7.4. PAGES/02_POST_STUDY_SURVEY.PY - Survey Collection
+-------------------------------------------------------
+
+Purpose: Collect post-study survey responses.
+
+Key Features:
+- Form-based input (all questions in single form)
+- Survey questions:
+  1. First Name
+  2. Which layout felt less mentally demanding overall?
+  3. Which layout would you prefer to use again?
+  4. In a few words, why did you prefer that layout?
+  5. Which layout made it easier to understand the information?
+  6. Which layout made it easier to find the main points or strategies?
+  7. Which layout felt more overwhelming or cluttered?
+  8. Is there anything else you'd like to share?
+- CSV logging:
+  * Separate file: post_study_survey.csv
+  * Headers match survey questions exactly
+  * Header verification and auto-repair
+  * Backup creation if headers are wrong
+
+Functions:
+- init_survey_log_file(path) -> None
+  * Verifies CSV headers match survey questions
+  * Creates backup if headers are wrong
+  * Recreates file with correct headers
+  * Idempotent and safe
+
+- save_survey_response(data) -> None
+  * Ensures all headers are present in data
+  * Appends to CSV file
+  * Handles missing fields gracefully
+
+Design Decisions:
+- Form submission: Prevents partial submissions
+- Header verification: Prevents data corruption
+- Backup creation: Preserves old data if format changes
+- Separate file: Keeps survey data distinct from interactions
+
+
+7.5. PAGES/03_VIEW_RESULTS.PY - Admin Results Viewer
+-----------------------------------------------------
+
+Purpose: View and download experiment results.
+
+Key Features:
+- Chatbot interactions viewer:
+  * Summary statistics (total interactions, participants)
+  * Condition breakdown (Standard vs Structured)
+  * Data preview table
+  * CSV download button
+- Survey responses viewer:
+  * Summary statistics (total responses, respondents)
+  * Preference breakdown
+  * Data preview table
+  * CSV download button
+  * Quick analysis charts:
+    * Less mentally demanding distribution
+    * Preferred layout distribution
+    * Easier to understand distribution
+
+Functions:
+- load_csv_if_exists(path) -> pd.DataFrame
+  * Safely loads CSV files
+  * Returns None if file doesn't exist
+  * Handles read errors gracefully
+
+Design Decisions:
+- Safe column access: Checks for column existence before use
+- Download functionality: Easy data export
+- Visualizations: Quick insights without external tools
+- Error handling: Graceful degradation if files are missing
+
+================================================================================
+DATA FLOW
+================================================================================
+
+QUERY PROCESSING FLOW
+--------------------
+
+1. User enters query in Streamlit UI
+2. User selects Response Type (Standard/Structured)
+3. User clicks "Submit Query"
+4. System captures start_time
+5. RAG Pipeline executes:
+   a. Query is embedded using OpenAI API
+   b. FAISS index searches for top-5 similar chunks
+   c. Retrieved chunks are formatted into context string
+   d. Prompt is built based on condition (baseline/cl_aware)
+   e. LLM generates response using OpenAI API
+6. System captures end_time
+7. Response is rendered using appropriate layout module
+8. Interaction is logged to results_raw.csv:
+   - Timestamp, participant name, condition, query, answer
+   - Retrieved chunks info, timing data
+9. User views response and can ask another question
+
+SURVEY SUBMISSION FLOW
+----------------------
+
+1. User navigates to "Post-Study Survey" page
+2. User fills out survey form
+3. User clicks "Submit"
+4. System validates required fields (First Name)
+5. Survey response is saved to post_study_survey.csv:
+   - All 8 survey questions and responses
+   - Timestamp
+6. Success message displayed
+7. User can view results in "View Results" page
+
+VECTOR STORE BUILDING FLOW
+--------------------------
+
+1. Run scripts/build_index.py
+2. System loads all PDF files from data/ directory
+3. Each PDF is extracted to text
+4. Text is cleaned (whitespace normalization, etc.)
+5. Documents are chunked:
+   - Tokenized using tiktoken
+   - Split into 600-token chunks with 100-token overlap
+   - Metadata attached (doc_id, title, chunk_index)
+6. Chunks are saved to processed_docs.jsonl
+7. Chunks are embedded in batches (100 at a time)
+8. FAISS index is built from embeddings
+9. Index and metadata are saved to disk
+10. System is ready for queries
+
+================================================================================
+KEY TECHNOLOGIES
+================================================================================
+
+PYTHON LIBRARIES
+----------------
+
+- streamlit (>=1.28.0): Web application framework
+- openai (>=1.3.0): OpenAI API client for LLM and embeddings
+- faiss-cpu (>=1.7.4): Facebook AI Similarity Search for vector indexing
+- pypdf (>=3.17.0): PDF text extraction
+- tiktoken (>=0.5.0): Token counting and text splitting
+- numpy (>=1.24.0): Numerical operations for embeddings
+- pandas (>=2.0.0): Data manipulation for results viewing
+- python-dotenv (>=1.0.0): Environment variable management
+
+EXTERNAL SERVICES
+-----------------
+
+- OpenAI API:
+  * GPT-4 Turbo Preview: Text generation
+  * text-embedding-3-small: Embedding generation (1536 dimensions)
+- Streamlit Community Cloud: Hosting platform
+
+DATA FORMATS
+------------
+
+- JSONL (JSON Lines): One JSON object per line
+  * Used for: processed_docs.jsonl
+  * Benefits: Streaming, line-by-line processing
+- CSV: Comma-separated values
+  * Used for: results_raw.csv, post_study_survey.csv
+  * Benefits: Easy analysis in Excel/Python
+- FAISS Index: Binary format
+  * Used for: vector_store.faiss
+  * Benefits: Fast similarity search
+
+================================================================================
+DESIGN DECISIONS & RATIONALE
+================================================================================
+
+1. WHY FAISS OVER OTHER VECTOR STORES?
+   - Local, no external dependencies
+   - Fast exact search (IndexFlatL2)
+   - Simple integration
+   - No database setup required
+   - Sufficient for POC scale (1108 chunks)
+
+2. WHY TOKEN-BASED CHUNKING?
+   - Ensures consistent chunk sizes for LLM context windows
+   - More accurate than character-based for LLM processing
+   - tiktoken uses same encoding as GPT models
+   - Overlap preserves context at boundaries
+
+3. WHY SEPARATE PROMPT TEMPLATES?
+   - Allows controlled comparison between conditions
+   - CL-aware prompt explicitly requests structure
+   - Baseline prompt allows natural, dense responses
+   - Easy to modify independently
+
+4. WHY STREAMLIT?
+   - Rapid prototyping and deployment
+   - Built-in multipage support
+   - Easy form handling
+   - Free cloud hosting
+   - Python-native (no frontend code needed)
+
+5. WHY CSV FOR LOGGING?
+   - Human-readable
+   - Easy to analyze in Excel/Python/R
+   - No database setup required
+   - Simple append operations
+   - Sufficient for experiment scale
+
+6. WHY SEPARATE LAYOUT MODULES?
+   - Clear separation of concerns
+   - Easy to modify presentation independently
+   - Testable in isolation
+   - Can add new layouts easily
+
+7. WHY CONDITION MAPPING?
+   - User-friendly labels ("Standard Layout" vs "baseline")
+   - Internal consistency (always use "baseline"/"cl_aware")
+   - Easy to change labels without code changes
+
+================================================================================
+DEPLOYMENT ARCHITECTURE
+================================================================================
+
+STREAMLIT CLOUD DEPLOYMENT
+---------------------------
+
+1. Repository: GitHub (finnman81/cs6795_term-project)
+2. Main file: src/ui/1_Chatbot.py
+3. Configuration:
+   - .streamlit/config.toml: Theme and server settings
+   - Secrets: OPENAI_API_KEY stored in Streamlit Cloud secrets
+4. Dependencies: requirements.txt
+5. Data files: Committed to git (vector store, processed docs)
+
+FILE PERSISTENCE
+----------------
+
+- Vector store: Committed to git (read-only in deployment)
+- Processed docs: Committed to git (read-only in deployment)
+- Results CSV: Written to app filesystem (persists between restarts)
+- Survey CSV: Written to app filesystem (persists between restarts)
+
+ACCESSING RESULTS
+-----------------
+
+1. Via "View Results" page in the app
+2. Download CSV files directly
+3. Files persist in app filesystem (can be accessed via git if committed)
+
+================================================================================
+USAGE INSTRUCTIONS
+================================================================================
+
+LOCAL DEVELOPMENT
+-----------------
+
+1. Install dependencies:
+   pip install -r requirements.txt
+
+2. Set up environment:
+   Create .env file with OPENAI_API_KEY
+
+3. Build vector index:
+   python scripts/build_index.py
+
+4. Run application:
+   streamlit run src/ui/1_Chatbot.py
+   OR
+   python scripts/run_app.bat (Windows)
+   python scripts/run_app.sh (Unix)
+
+5. Access application:
+   http://localhost:8501
+
+DEPLOYMENT
+----------
+
+1. Push code to GitHub
+2. Connect to Streamlit Cloud
+3. Set main file: src/ui/1_Chatbot.py
+4. Add secret: OPENAI_API_KEY
+5. Deploy and share URL
+
+TESTING
+-------
+
+1. Unit tests:
+   python -m pytest tests/
+
+2. Manual RAG testing:
+   python scripts/test_rag.py
+
+3. Integration testing:
+   Test both conditions with sample queries
+   Verify logging works
+   Check survey submission
+
+================================================================================
+DATA COLLECTION
+================================================================================
+
+CHATBOT INTERACTIONS (results_raw.csv)
+---------------------------------------
+
+Columns:
+- timestamp: ISO format timestamp
+- participant_id: First name entered by user
+- condition: "baseline" or "cl_aware"
+- task_id: Task ID if using predefined task (empty for free-form)
+- query: User's question
+- answer: Full LLM response
+- retrieved_chunks_count: Number of chunks retrieved (always 5)
+- retrieved_chunks_titles: Semicolon-separated document titles
+- start_time: Query submission time (ISO format)
+- end_time: Response received time (ISO format)
+- duration_seconds: Response time in seconds
+- extra_meta: Additional metadata (currently empty)
+
+SURVEY RESPONSES (post_study_survey.csv)
+----------------------------------------
+
+Columns:
+- timestamp: ISO format timestamp
+- participant_name: First name
+- less_mentally_demanding: "Standard Layout", "Structured Layout", or "About the same"
+- preferred_layout: "Standard Layout", "Structured Layout", or "No preference"
+- preference_reason: Free-text explanation
+- easier_to_understand: "Standard Layout", "Structured Layout", or "About the same"
+- easier_to_find_main_points: "Standard Layout", "Structured Layout", or "About the same"
+- more_overwhelming: "Standard Layout", "Structured Layout", or "About the same"
+- additional_feedback: Free-text comments
+
+================================================================================
+EXTENDING THE SYSTEM
+================================================================================
+
+ADDING NEW CONDITIONS
+---------------------
+
+1. Add prompt template in prompts.py
+2. Add layout module in ui/layout_*.py
+3. Update condition mapping in 1_Chatbot.py
+4. Update build_prompt() in rag_pipeline.py
+
+ADDING NEW DATA SOURCES
+-----------------------
+
+1. Add PDFs to data/ directory
+2. Re-run build_index.py
+3. Vector store will include new documents
+
+MODIFYING CHUNKING STRATEGY
+---------------------------
+
+1. Update MAX_CHUNK_TOKENS and CHUNK_OVERLAP in config.py
+2. Re-run build_index.py
+3. New chunks will be generated
+
+CHANGING LLM MODEL
+------------------
+
+1. Update MODEL_NAME in config.py
+2. Update EMBEDDING_MODEL_NAME if needed
+3. No code changes required (OpenAI API handles model selection)
+
+ADDING NEW SURVEY QUESTIONS
+----------------------------
+
+1. Add question to 02_Post_Study_Survey.py form
+2. Add column to SURVEY_HEADERS list
+3. Add field to response dictionary
+4. Update 03_View_Results.py if needed for visualization
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+COMMON ISSUES
+-------------
+
+1. "ModuleNotFoundError: No module named 'src'"
+   - Solution: Ensure PROJECT_ROOT is in sys.path
+   - Check: Path calculations in each module
+
+2. "Vector store not found"
+   - Solution: Run scripts/build_index.py first
+   - Check: data/vector_store.faiss exists
+
+3. "OPENAI_API_KEY not found"
+   - Solution: Set in .env (local) or Streamlit secrets (cloud)
+   - Check: config.py is loading correctly
+
+4. "CSV headers don't match"
+   - Solution: Delete old CSV files, let system recreate
+   - Check: Header verification in logging functions
+
+5. "PDF extraction fails"
+   - Solution: Check PDF is not corrupted or password-protected
+   - Check: pypdf version compatibility
+
+PERFORMANCE CONSIDERATIONS
+--------------------------
+
+- Vector store loading: Cached, loads once per session
+- Embedding generation: Batch processing (100 chunks at a time)
+- LLM calls: Sequential (one query at a time)
+- File I/O: Append mode for logging (efficient)
+
+SCALING CONSIDERATIONS
+----------------------
+
+- Current scale: 29 documents, 1108 chunks (suitable for POC)
+- For larger scale:
+  * Consider approximate search (FAISS IndexIVF)
+  * Consider database for results (PostgreSQL, MongoDB)
+  * Consider async processing for multiple queries
+  * Consider caching for common queries
+
+================================================================================
+CONCLUSION
+================================================================================
+
+This system implements a complete RAG pipeline with cognitive load research
+capabilities. The modular architecture allows for easy extension and modification.
+The Streamlit interface provides an accessible way for participants to interact
+with the system, and the logging infrastructure captures all necessary data for
+analysis.
+
+Key strengths:
+- Clean separation of concerns
+- Modular, testable components
+- Easy deployment and maintenance
+- Comprehensive data collection
+- Flexible condition comparison
+
+The system is production-ready for research purposes and can be extended for
+larger-scale studies or different research questions.
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
+
