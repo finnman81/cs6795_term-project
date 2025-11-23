@@ -1,0 +1,325 @@
+================================================================================
+PDF DOCUMENT COLLECTION SUMMARY
+Cognitive-Load-Aware RAG System Corpus
+================================================================================
+
+Total Documents: 29 PDF files
+Total Collection: Research papers, articles, and publications covering:
+  - Cognitive Load Theory
+  - Digital Wellbeing & Focus
+  - Human-Computer Interaction
+  - Educational Technology
+  - Health & Medical Education
+  - Information Design
+  - Decision Making
+  - Cultural Responsiveness in AI
+
+================================================================================
+DOCUMENT LISTING BY CATEGORY
+================================================================================
+
+1. COGNITIVE LOAD THEORY & INSTRUCTIONAL DESIGN
+------------------------------------------------
+
+1. Cognitive_Load_&_ID.pdf (27 KB)
+   - Core cognitive load theory document
+   - Instructional design principles
+
+2. Medical Education - 2009 - Van Merriënboer - Cognitive load theory in 
+   health professional education design principles and.pdf (195 KB)
+   - Cognitive load theory in medical education
+   - Design principles for health professional training
+   - Author: Van Merriënboer (2009)
+
+3. On-the-role-of-linguistic-features-for-comprehension-an_2023_Educational-Res.pdf (836 KB)
+   - Linguistic features and comprehension
+   - Educational research (2023)
+
+4. Learning-subject-content-through-a-foreign-language-should-n_2017_Learning-a.pdf (358 KB)
+   - Language learning and cognitive load
+   - Foreign language instruction (2017)
+
+
+2. HUMAN-COMPUTER INTERACTION & INTERFACE DESIGN
+-------------------------------------------------
+
+5. CHI2005.pdf (515 KB)
+   - CHI (Computer-Human Interaction) conference paper (2005)
+   - HCI research
+
+6. tochi-revised.pdf (190 KB)
+   - TOCHI (ACM Transactions on Computer-Human Interaction)
+   - Revised version
+
+7. Effects-of-font-size-and-font-style-of-Tradition_2019_International-Journal-.pdf (3.9 MB)
+   - Typography and readability
+   - Font size and style effects
+   - International Journal (2019)
+
+8. f-RecX--A-framework-for-designing-effective-textu_2025_International-Journal.pdf (3.4 MB)
+   - Textual interface design framework
+   - Effective text design (2025)
+
+9. Brief-non-spatial-signals-facilitate-visual-sea_2025_International-Journal-o.pdf (1.3 MB)
+   - Visual search and attention
+   - Non-spatial signals (2025)
+
+10. Culturally-responsive-AI-chatbots--From-fr_2025_Computers-in-Human-Behavior-.pdf (1.2 MB)
+    - Culturally responsive AI design
+    - Chatbot design principles
+    - Computers in Human Behavior (2025)
+
+
+3. DECISION MAKING & COGNITIVE PROCESSES
+-----------------------------------------
+
+11. Fast--amp--slow-decisions-under-risk--Intuition-rather-than-delib_2024_Cogni.pdf (1.8 MB)
+    - Fast vs slow decision making
+    - Intuition vs deliberation
+    - Risk assessment (2024)
+
+12. fpsyg-08-00605.pdf (389 KB)
+    - Frontiers in Psychology article
+    - Cognitive psychology research
+
+
+4. HEALTH & MEDICAL RESEARCH
+-----------------------------
+
+13. Medical Education - 2009 - Van Merriënboer - Cognitive load theory in 
+    health professional education design principles and.pdf (195 KB)
+    - [Listed above in Cognitive Load section]
+
+14. From-fragmented-to-functional--Improving-rehabilitation-data-_2025_SSM---Hea.pdf (2.2 MB)
+    - Rehabilitation data infrastructure
+    - Health data systems (2025)
+    - SSM - Health journal
+
+15. Global--regional--and-national-health-care-inefficiency-and-ass_2025_The-Lan.pdf (2.5 MB)
+    - Healthcare efficiency analysis
+    - Global health research
+    - The Lancet (2025)
+
+16. The-potential-impact-of-reductions-in-international-donor-fu_2025_The-Lancet.pdf (1.5 MB)
+    - International donor funding
+    - Global health policy
+    - The Lancet (2025)
+
+17. s12916-025-03944-z.pdf (1.4 MB)
+    - BMC Medicine article
+    - Medical research
+
+18. s41598-023-36256-4.pdf (993 KB)
+    - Scientific Reports article (2023)
+    - Scientific research
+
+19. Impact-of-Health--Environmental--and-Animal-Welfare_2023_Journal-of-the-Acad.pdf (4.4 MB)
+    - Health, environmental, and animal welfare
+    - Journal of the Academy (2023)
+
+
+5. CONSUMER BEHAVIOR & PERCEPTIONS
+-----------------------------------
+
+20. Consumer-perceptions-and-attitudes-towards-climate_2022_Journal-of-Cleaner-P.pdf (937 KB)
+    - Consumer behavior and climate change
+    - Environmental attitudes
+    - Journal of Cleaner Production (2022)
+
+
+6. TECHNICAL & COMPUTATIONAL PAPERS
+-----------------------------------
+
+21. 2410.22370v1.pdf (46 MB) [LARGEST FILE]
+    - ArXiv preprint (arXiv:2410.22370v1)
+    - Technical research paper
+
+22. 3313831.3376590.pdf (1.0 MB)
+    - ACM Digital Library paper
+    - Technical research
+
+23. 3750069.3750103.pdf (1.7 MB)
+    - ACM Digital Library paper
+    - Technical research
+
+24. A_1022193728205.pdf (2.8 MB)
+    - Technical research paper
+
+25. s00146-010-0272-8.pdf (661 KB)
+    - Scientific/technical article
+
+26. pgaf017.pdf (558 KB)
+    - Technical research paper
+
+
+7. CONFERENCE & JOURNAL PAPERS (UNSPECIFIED)
+---------------------------------------------
+
+27. 1-s2.0-0364021388900237-main.pdf (1.8 MB)
+    - ScienceDirect article
+    - Main document
+
+28. 1-s2.0-S1071581922001616-main.pdf (3.0 MB)
+    - ScienceDirect article (2022)
+    - Main document
+
+29. 1-s2.0-S107158192500179X-main.pdf (3.5 MB)
+    - ScienceDirect article (2025)
+    - Main document
+
+30. ward2017.pdf (1.1 MB)
+    - Ward (2017) research paper
+
+
+================================================================================
+FILE SIZE SUMMARY
+================================================================================
+
+Largest Files:
+- 2410.22370v1.pdf: 46 MB (ArXiv preprint)
+- Impact-of-Health--Environmental--and-Animal-Welfare_2023_Journal-of-the-Acad.pdf: 4.4 MB
+- Effects-of-font-size-and-font-style-of-Tradition_2019_International-Journal-.pdf: 3.9 MB
+- 1-s2.0-S107158192500179X-main.pdf: 3.5 MB
+- f-RecX--A-framework-for-designing-effective-textu_2025_International-Journal.pdf: 3.4 MB
+
+Smallest Files:
+- Cognitive_Load_&_ID.pdf: 27 KB
+- tochi-revised.pdf: 190 KB
+- Medical Education - 2009 - Van Merriënboer...pdf: 195 KB
+
+Average File Size: ~2.5 MB (excluding the 46 MB ArXiv file)
+
+Total Corpus Size: ~85 MB (including all PDFs)
+
+
+================================================================================
+TOPICAL COVERAGE
+================================================================================
+
+Primary Research Areas:
+
+1. COGNITIVE LOAD THEORY (4 documents)
+   - Core theory and applications
+   - Medical education applications
+   - Language learning contexts
+
+2. INTERFACE & INFORMATION DESIGN (6 documents)
+   - Typography and readability
+   - Textual design frameworks
+   - Visual attention and search
+   - Cultural responsiveness in AI
+
+3. HEALTH & MEDICAL (7 documents)
+   - Medical education
+   - Healthcare systems
+   - Global health policy
+   - Rehabilitation data
+
+4. DECISION MAKING & COGNITION (2 documents)
+   - Fast vs slow decisions
+   - Cognitive processes
+
+5. CONSUMER BEHAVIOR (1 document)
+   - Climate change perceptions
+
+6. TECHNICAL/COMPUTATIONAL (9 documents)
+   - Various technical research papers
+   - ACM and ArXiv publications
+
+
+================================================================================
+TEMPORAL DISTRIBUTION
+================================================================================
+
+Publication Years (where identifiable):
+- 2005: 1 document (CHI2005)
+- 2009: 1 document (Van Merriënboer - Medical Education)
+- 2017: 2 documents (Learning-subject-content, ward2017)
+- 2019: 1 document (Effects-of-font-size)
+- 2022: 2 documents (Consumer-perceptions, 1-s2.0-S1071581922001616)
+- 2023: 3 documents (On-the-role-of-linguistic, Impact-of-Health, s41598-023)
+- 2024: 1 document (Fast--amp--slow-decisions)
+- 2025: 6 documents (Multiple recent publications)
+
+Most Recent: 2025 (6 documents)
+Oldest: 2005 (1 document)
+
+Note: Many files don't have clear year indicators in filenames.
+
+
+================================================================================
+PUBLICATION VENUES
+================================================================================
+
+Identified Journals/Conferences:
+- The Lancet (2 documents)
+- International Journal (multiple)
+- Computers in Human Behavior
+- Journal of Cleaner Production
+- SSM - Health
+- Frontiers in Psychology (fpsyg)
+- BMC Medicine (s12916)
+- Scientific Reports (s41598)
+- ACM Transactions (TOCHI)
+- CHI Conference
+- ArXiv
+- ScienceDirect (multiple)
+- Educational Research journals
+
+
+================================================================================
+RELEVANCE TO PROJECT
+================================================================================
+
+Documents Most Relevant to Cognitive Load Research:
+1. Cognitive_Load_&_ID.pdf - Core theory
+2. Medical Education - 2009 - Van Merriënboer - Core applications
+3. Effects-of-font-size-and-font-style - Interface design
+4. f-RecX framework - Textual design
+5. Culturally-responsive-AI-chatbots - AI interface design
+6. On-the-role-of-linguistic-features - Comprehension research
+
+Documents Relevant to Digital Wellbeing:
+1. Fast--amp--slow-decisions - Decision making processes
+2. Consumer-perceptions-and-attitudes - Behavior change
+3. Interface design papers - User experience
+
+Documents Providing Broader Context:
+- Health and medical education papers
+- Technical research papers
+- Various HCI and design papers
+
+
+================================================================================
+PROCESSING STATUS
+================================================================================
+
+All 29 PDFs have been:
+- Extracted to text using pypdf
+- Cleaned and normalized
+- Chunked into 600-token segments with 100-token overlap
+- Embedded using OpenAI text-embedding-3-small
+- Indexed in FAISS vector store
+
+Resulting Corpus:
+- Total Chunks: 1,108
+- Vector Store Size: 6.5 MB
+- Metadata Size: 2.9 MB
+- Processed Documents: 2.9 MB (JSONL format)
+
+
+================================================================================
+NOTES
+================================================================================
+
+- File naming conventions vary (some include full titles, others use IDs)
+- Some files are very large (46 MB ArXiv paper) but successfully processed
+- Collection spans 20 years (2005-2025)
+- Mix of theoretical, applied, and technical papers
+- Strong representation of cognitive load theory and interface design
+- Good coverage of recent research (2023-2025)
+
+================================================================================
+END OF SUMMARY
+================================================================================
+
